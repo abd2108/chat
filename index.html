@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Private Chat</title>
+</head>
+<body>
+  <h1>Private Chat</h1>
+  <div>
+    <label>Your Name: </label>
+    <input id="usernameInput" placeholder="Enter your name" />
+    <button onclick="setUsername()">Join</button>
+  </div>
+  <div>
+    <label>Send To: </label>
+    <select id="recipientSelect"></select>
+  </div>
+  <div id="messages"></div>
+  <input id="msgInput" placeholder="Type a message" />
+  <button onclick="sendMessage()">Send</button>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let myUsername = '';
+
+    // Set username
+    function setUsername() {
+      myUsername = document.getElementById('usernameInput').value;
+      if (myUsername) {
+        socket.emit('setUsername', myUsername);
+        document.getElementById('usernameInput').disabled = true;
+      }
+    }
+
+    // Update recipient dropdown
+    socket.on('userList', (users) => {
+      const select = document.getElementById('recipientSelect');
+      select.innerHTML = ''; // Clear old options
+      users.forEach((user) => {
+        if (user !== myUsername) { // Exclude self
+          const option = document.createElement('option');
+          option.value = user;
+          option.text = user;
+          select.appendChild(option);
+        }
+      });
+    });
+
+    // Show messages
+    socket.on('message', (msg) => {
+      const div = document.getElementById('messages');
+      div.innerHTML += `<p>${msg}</p>`;
+    });
+
+    // Send private message
+    function sendMessage() {
+      const input = document.getElementById('msgInput');
+      const to = document.getElementById('recipientSelect').value;
+      if (input.value && to) {
+        socket.emit('privateMessage', { to, message: input.value });
+        input.value = '';
+      }
+    }
+  </script>
+</body>
+</html>
